@@ -299,7 +299,6 @@ def handle_data(context, data):
             namespace={'assert_equal': self.assertEqual},
         )
 
-
     def test_datetime_bad_params(self):
         algo_text = """
 from zipline.api import get_datetime
