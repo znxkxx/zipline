@@ -61,6 +61,7 @@ from zipline.errors import (
     UnsupportedCancelPolicy,
     UnsupportedDatetimeFormat,
     UnsupportedOrderParameters,
+    ZeroCapitalError
 )
 from zipline.finance.trading import TradingEnvironment
 from zipline.finance.blotter import Blotter
@@ -253,6 +254,7 @@ class TradingAlgorithm(object):
                 Any asset identifiers that are not provided in the
                 equities_metadata, but will be traded by this TradingAlgorithm
         """
+
         self.sources = []
 
         # List of trading controls to be used to validate orders.
@@ -303,6 +305,12 @@ class TradingAlgorithm(object):
                 end=kwargs.pop('end', None),
                 trading_calendar=self.trading_calendar,
             )
+
+        # Ensure that capital base hasn't been overridden to an invalid value
+        # This test duplicates that from qexec/algoproxy, but targets users
+        # who will run backtests from the API
+        if self.sim_params.capital_base <= 0:
+            raise ZeroCapitalError
 
         self.metrics_tracker = None
         self._last_sync_time = pd.NaT
