@@ -51,6 +51,7 @@ from zipline.errors import (
     TradingControlViolation,
     UnsupportedCancelPolicy,
     UnsupportedDatetimeFormat,
+    ZeroCapitalError
 )
 
 from zipline.finance.commission import PerShare, PerTrade
@@ -298,6 +299,7 @@ def handle_data(context, data):
             namespace={'assert_equal': self.assertEqual},
         )
 
+
     def test_datetime_bad_params(self):
         algo_text = """
 from zipline.api import get_datetime
@@ -312,6 +314,47 @@ def handle_data(context, data):
         algo = self.make_algo(script=algo_text)
         with self.assertRaises(TypeError):
             algo.run()
+
+    @parameterized.expand([
+        (-1000, 'invalid_base'),
+        (0, 'invalid_base'),
+    ])
+    def test_invalid_capital_base(self, cap_base, name):
+        """
+        Test that the appropriate error is being raised and orders aren't
+        filled for algos with capital base <= 0
+        """
+        algo_text = """
+def initialize(context):
+    pass
+
+def handle_data(context, data):
+    order(sid(24), 1000)
+        """
+
+        sim_params = SimulationParameters(
+            start_session=pd.Timestamp("2006-01-03", tz='UTC'),
+            end_session=pd.Timestamp("2006-01-06", tz='UTC'),
+            capital_base=cap_base,
+            data_frequency="minute",
+            trading_calendar=self.trading_calendar
+        )
+
+        with self.assertRaises(ZeroCapitalError) as exc:
+            # make_algo will trace to TradingAlgorithm,
+            # where the exception will be raised
+            algo = self.make_algo(script=algo_text, sim_params=sim_params)
+        # It shouldn't be able to run the algorithm
+            output = algo.run()
+            # If capital base was less than zero, the none of the orders
+            # should have been filled so starting/ending cash should be
+            # equal
+            expected_cash = [cap_base for x in range(4)]
+            self.assertEqual(expected_cash, list(output['ending_cash']))
+            # Make sure the correct error was raised
+            error = exc.exception
+            self.assertEqual(str(error), 'The initial capital base is set \
+                                          to zero (or fewer) dollars')
 
     def test_get_environment(self):
         expected_env = {
@@ -3773,7 +3816,7 @@ class TestDailyEquityAutoClose(zf.WithMakeAlgo, zf.ZiplineTestCase):
 
     @parameter_space(
         order_size=[10, -10],
-        capital_base=[0, 100000],
+        capital_base=[1, 100000],
         __fail_fast=True,
     )
     def test_daily_delisted_equities(self,
