@@ -63,7 +63,7 @@ from zipline.errors import (
     UnsupportedOrderParameters,
 )
 from zipline.finance.trading import TradingEnvironment
-from zipline.finance.blotter import Blotter
+from zipline.finance.blotter import SimulatedBlotter
 from zipline.finance.controls import (
     LongOnly,
     MaxOrderCount,
@@ -326,7 +326,7 @@ class TradingAlgorithm(object):
         self.blotter = kwargs.pop('blotter', None)
         self.cancel_policy = kwargs.pop('cancel_policy', NeverCancel())
         if not self.blotter:
-            self.blotter = Blotter(
+            self.blotter = kwargs.pop('blotter_class', SimulatedBlotter)(
                 data_frequency=self.data_frequency,
                 # Default to NeverCancel in zipline
                 cancel_policy=self.cancel_policy,
