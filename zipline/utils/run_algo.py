@@ -18,7 +18,7 @@ except ImportError:
 import six
 from toolz import valfilter, concatv
 
-from zipline.algorithm import TradingAlgorithm
+from zipline.algorithm import SimulatedTradingAlgorithm
 from zipline.data import bundles
 from zipline.data.data_portal import DataPortal
 from zipline.finance import metrics
