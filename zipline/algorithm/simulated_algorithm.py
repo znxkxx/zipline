@@ -15,6 +15,7 @@
 from datetime import time
 
 import logbook
+from zipline.extensions import register
 from zipline.gens.sim_engine import MinuteSimulationClock
 from zipline.gens.tradesimulation import AlgorithmSimulator
 from zipline.utils.calendars.trading_calendar import days_at_time
@@ -23,6 +24,7 @@ from . import TradingAlgorithm
 log = logbook.Logger("ZiplineLog")
 
 
+@register(TradingAlgorithm, 'default')
 class SimulatedTradingAlgorithm(TradingAlgorithm):
     """A class that represents a trading strategy and parameters to execute
     the strategy.
